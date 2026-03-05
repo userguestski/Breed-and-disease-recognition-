@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BREED — AI Veterinary Diagnostics</title>
+
+  <!-- Google Fonts: Fraunces (display) + DM Mono (clinical data) + Outfit (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       DESIGN SYSTEM — CSS Variables
+       Forest-dark veterinary aesthetic: deep greens, warm cream, amber pulse
+       ═══════════════════════════════════════════════════════ */
+    :root {
+      --bg-deep:      #080f0a;
+      --bg-card:      #0e1a10;
+      --bg-surface:   #142018;
+      --bg-elevated:  #1c2e20;
+      --border:       #2a4030;
+      --border-light: #3a5545;
+      --text-primary: #eef4ec;
+      --text-muted:   #7da88a;
+      --text-dim:     #4a7055;
+      --accent:       #7ec98a;        /* leaf green */
+      --accent-warm:  #e8a030;        /* amber */
+      --accent-red:   #e06060;        /* emergency */
+      --accent-blue:  #6ab0d8;        /* info */
+      --glow:         rgba(126,201,138,0.15);
+      --glow-warm:    rgba(232,160,48,0.18);
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-body:    'Outfit', sans-serif;
+      --font-mono:    'DM Mono', monospace;
+      --radius:       12px;
+      --radius-lg:    20px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ── Animated grain overlay ─────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.35;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       HEADER / NAV
+    ══════════════════════════════════════════════════════ */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(8,15,10,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+    }
+    nav {
+      max-width: 1200px;
+      margin: 0 auto;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), #3a9a4a);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 18px var(--glow);
+    }
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 0.05em;
+    }
+    .logo-text span { color: var(--accent); }
+    .nav-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       HERO SECTION
+    ══════════════════════════════════════════════════════ */
+    .hero {
+      padding: 5rem 2rem 3rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -100px; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(126,201,138,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards 0.1s;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 300;
+      line-height: 1.1;
+      color: var(--text-primary);
+      margin-bottom: 1.2rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.2s;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .hero-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+      font-weight: 300;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.35s;
+    }
+    .hero-pills {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.45s;
+    }
+    .pill {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      background: var(--bg-card);
+    }
+    .pill.active { border-color: var(--accent); color: var(--accent); background: rgba(126,201,138,0.08); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       MAIN LAYOUT
+    ══════════════════════════════════════════════════════ */
+    .main-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem 6rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .main-container { grid-template-columns: 1fr; }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       CARD SYSTEM
+    ══════════════════════════════════════════════════════ */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s ease;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+    }
+    .card:hover { border-color: var(--border-light); }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon { font-size: 1rem; }
+    .card-desc {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       UPLOAD ZONE
+    ══════════════════════════════════════════════════════ */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      background: var(--bg-surface);
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(126,201,138,0.05);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon {
+      width: 52px; height: 52px;
+      background: var(--bg-elevated);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      border: 1px solid var(--border);
+    }
+    .upload-main-text {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    .upload-sub-text {
+      font-size: 0.76rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+    .preview-container {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .preview-container img {
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+    .preview-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(8,15,10,0.8) 0%, transparent 50%);
+    }
+    .preview-label {
+      position: absolute;
+      bottom: 10px; left: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+    .change-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: rgba(8,15,10,0.8);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      z-index: 2;
+      transition: all 0.2s;
+    }
+    .change-btn:hover { color: var(--text-primary); border-color: var(--border-light); }
+
+    /* ══════════════════════════════════════════════════════
+       FORM ELEMENTS
+    ══════════════════════════════════════════════════════ */
+    .form-group { margin-bottom: 1.1rem; }
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 0.45rem;
+      text-transform: uppercase;
+    }
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      padding: 0.7rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+    }
+    .form-input::placeholder,
+    .form-textarea::placeholder { color: var(--text-dim); }
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus { border-color: var(--accent); }
+    .form-textarea {
+      resize: vertical;
+      min-height: 90px;
+      line-height: 1.55;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       SUBMIT BUTTON
+    ══════════════════════════════════════════════════════ */
+    .btn-diagnose {
+      width: 100%;
+      padding: 0.95rem;
+      background: linear-gradient(135deg, #3a8a45, #5ab065);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(90,176,101,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-diagnose:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(90,176,101,0.35);
+    }
+    .btn-diagnose:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-diagnose .btn-spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .btn-diagnose.loading .btn-spinner { display: block; }
+    .btn-diagnose.loading .btn-text { display: none; }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       RESULTS PANEL
+    ══════════════════════════════════════════════════════ */
+    .results-panel {
+      grid-column: 1 / -1;
+      display: none;
+    }
+    .results-panel.visible { display: block; }
+
+    /* Patient ID bar */
+    .record-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.9rem 1.25rem;
+      margin-bottom: 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+    }
+    .record-id { color: var(--accent); }
+    .record-meta { color: var(--text-dim); }
+    .record-quality {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+    }
+    .quality-bar-wrap {
+      width: 60px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .quality-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 1s ease;
+    }
+
+    /* Results grid */
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 900px) {
+      .results-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .results-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Breed card */
+    .breed-card {
+      grid-column: span 1;
+      background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .breed-card::after {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 100px; height: 100px;
+      background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .breed-label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .breed-name {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+      margin-bottom: 0.3rem;
+    }
+    .breed-species {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-bottom: 0.8rem;
+    }
+    .confidence-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.3rem;
+    }
+    .confidence-label { font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); }
+    .confidence-pct { font-size: 0.9rem; font-weight: 600; color: var(--accent); font-family: var(--font-mono); }
+    .conf-bar-wrap {
+      width: 100%; height: 5px;
+      background: var(--bg-surface);
+      border-radius: 3px; overflow: hidden;
+    }
+    .conf-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #adf7b6);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+    }
+
+    /* Patient info card */
+    .info-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      background: var(--bg-card);
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid rgba(42,64,48,0.4);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-key {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .info-val {
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    .age-badge {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 2px 9px;
+      border-radius: 10px;
+      background: rgba(126,201,138,0.12);
+      color: var(--accent);
+      border: 1px solid rgba(126,201,138,0.25);
+    }
+
+    /* Emergency flag card */
+    .emergency-card {
+      border: 1px solid var(--accent-red);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      background: rgba(224,96,96,0.06);
+      display: none;
+    }
+    .emergency-card.visible { display: block; }
+    .emergency-title {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent-red);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .emergency-flag {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.83rem;
+      color: #f0a0a0;
+      padding: 0.4rem 0;
+      line-height: 1.4;
+    }
+    .emergency-dot { color: var(--accent-red); font-size: 1rem; flex-shrink: 0; margin-top: -1px; }
+
+    /* Differentials section */
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-full { grid-column: 1 / -1; }
+
+    .diff-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .diff-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.75rem 1rem;
+      align-items: start;
+      transition: border-color 0.2s;
+      opacity: 0;
+      transform: translateX(-10px);
+      animation: slideIn 0.4s ease forwards;
+    }
+    .diff-item:hover { border-color: var(--border-light); }
+    @keyframes slideIn {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .diff-rank {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      padding-top: 2px;
+    }
+    .diff-rank.top { color: var(--accent-warm); }
+
+    .diff-body { min-width: 0; }
+    .diff-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+    .diff-code {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      margin-bottom: 0.4rem;
+    }
+    .diff-signs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .sign-tag {
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+    }
+    .sign-tag.support { background: rgba(126,201,138,0.1); color: var(--accent); border: 1px solid rgba(126,201,138,0.2); }
+    .sign-tag.against { background: rgba(224,96,96,0.08); color: #e09090; border: 1px solid rgba(224,96,96,0.15); }
+
+    .diff-conf-col { text-align: right; min-width: 65px; }
+    .diff-conf-pct {
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .diff-conf-bar-wrap {
+      width: 60px; height: 3px;
+      background: var(--bg-elevated);
+      border-radius: 2px; overflow: hidden;
+      margin-top: 4px; margin-left: auto;
+    }
+    .diff-conf-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 1s ease 0.5s;
+    }
+
+    /* Care plan */
+    .care-list { display: flex; flex-direction: column; gap: 0.55rem; }
+    .care-item {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 0.75rem 1rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      line-height: 1.5;
+      opacity: 0;
+      animation: slideIn 0.4s ease forwards;
+    }
+    .care-step {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Medication safety */
+    .med-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .med-table th {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      text-align: left;
+      padding: 0 0.75rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .med-table td {
+      padding: 0.6rem 0.75rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(42,64,48,0.3);
+      vertical-align: top;
+    }
+    .med-table tr:last-child td { border-bottom: none; }
+    .med-drug { font-family: var(--font-mono); color: var(--text-primary); font-weight: 500; }
+    .risk-badge {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+    .risk-HIGH    { background: rgba(224,96,96,0.15); color: #e07070; border: 1px solid rgba(224,96,96,0.3); }
+    .risk-MEDIUM  { background: rgba(232,160,48,0.12); color: var(--accent-warm); border: 1px solid rgba(232,160,48,0.25); }
+    .risk-LOW     { background: rgba(126,201,138,0.1); color: var(--accent); border: 1px solid rgba(126,201,138,0.2); }
+    .risk-UNKNOWN { background: rgba(106,176,216,0.1); color: var(--accent-blue); border: 1px solid rgba(106,176,216,0.2); }
+    .dose-badge {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .dose-PEDIATRIC     { color: var(--accent-warm); border-color: rgba(232,160,48,0.25); }
+    .dose-GERIATRIC     { color: var(--accent-blue); border-color: rgba(106,176,216,0.25); }
+    .dose-CONTRAINDICATED { color: #e07070; border-color: rgba(224,96,96,0.3); }
+
+    /* ══════════════════════════════════════════════════════
+       SAFE STATUS BANNER
+    ══════════════════════════════════════════════════════ */
+    .safe-banner {
+      padding: 0.9rem 1.25rem;
+      border-radius: var(--radius);
+      margin-top: 1.25rem;
+      font-size: 0.83rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 500;
+    }
+    .safe-banner.safe {
+      background: rgba(126,201,138,0.08);
+      border: 1px solid rgba(126,201,138,0.25);
+      color: var(--accent);
+    }
+    .safe-banner.unsafe {
+      background: rgba(224,96,96,0.08);
+      border: 1px solid rgba(224,96,96,0.3);
+      color: #e07070;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       LOADING STATE
+    ══════════════════════════════════════════════════════ */
+    .loading-panel {
+      grid-column: 1 / -1;
+      display: none;
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+    .loading-panel.visible { display: block; }
+    .loading-orb {
+      width: 64px; height: 64px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      margin: 0 auto 1.5rem;
+      animation: spin 1s linear infinite;
+    }
+    .loading-stages { display: flex; flex-direction: column; gap: 8px; max-width: 300px; margin: 0 auto; }
+    .stage-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .stage-item.active { color: var(--accent); border-color: rgba(126,201,138,0.3); }
+    .stage-item.done   { color: var(--text-muted); }
+    .stage-item.done::before { content: '✓ '; }
+    .stage-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       DISCLAIMER FOOTER
+    ══════════════════════════════════════════════════════ */
+    .disclaimer {
+      max-width: 1100px;
+      margin: 0 auto 3rem;
+      padding: 0 2rem;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .disclaimer strong { color: var(--text-muted); }
+
+    /* ── Error toast ────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--accent-red);
+      color: #f0a0a0;
+      padding: 0.8rem 1.2rem;
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+      font-family: var(--font-mono);
+      max-width: 340px;
+      z-index: 999;
+      display: none;
+      animation: fadeUp 0.3s ease;
+    }
+    .toast.visible { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- ══ HEADER ═══════════════════════════════════════════ -->
+  <header>
+    <nav>
+      <a href="#" class="logo">
+        <div class="logo-icon">🐾</div>
+        <span class="logo-text">BREED<span>.</span>AI</span>
+      </a>
+      <span class="nav-badge">v1.0 · Gemini 2.0 Flash</span>
+      <div class="nav-status">
+        <div class="status-dot"></div>
+        System Operational
+      </div>
+    </nav>
+  </header>
+
+  <!-- ══ HERO ═════════════════════════════════════════════ -->
+  <section class="hero">
+    <p class="hero-eyebrow">AI-Powered Veterinary Diagnostics</p>
+    <h1 class="hero-title">
+      Identify breeds &<br><em>detect diseases</em> instantly
+    </h1>
+    <p class="hero-subtitle">
+      Upload a photo, describe symptoms — our AI returns a professional
+      differential diagnosis in seconds. Supports pets &amp; livestock.
+    </p>
+    <div class="hero-pills">
+      <span class="pill active">🐕 Dogs</span>
+      <span class="pill active">🐈 Cats</span>
+      <span class="pill active">🐄 Cattle</span>
+      <span class="pill active">🐐 Goats</span>
+      <span class="pill">🐴 Horses</span>
+      <span class="pill">🐑 Sheep</span>
+      <span class="pill">🐰 Rabbits</span>
+    </div>
+  </section>
+
+  <!-- ══ MAIN ══════════════════════════════════════════════ -->
+  <main class="main-container">
+
+    <!-- ── LEFT: IMAGE UPLOAD ─────────────────────────── -->
+    <div class="card" style="animation: fadeUp 0.6s ease forwards 0.5s; opacity: 0;">
+      <div class="card-title">
+        <span class="icon">📷</span> Animal Photo
+      </div>
+      <p class="card-desc">Upload a clear, well-lit photo of the animal</p>
+
+      <!-- Image preview (hidden until file chosen) -->
+      <div class="preview-container" id="previewContainer">
+        <img id="previewImg" src="" alt="Preview">
+        <div class="preview-overlay"></div>
+        <span class="preview-label">PREPROCESSED READY</span>
+        <button class="change-btn" onclick="clearImage()">Change Photo</button>
+      </div>
+
+      <!-- Upload zone (hidden when preview shown) -->
+      <div class="upload-zone" id="uploadZone"
+           ondragover="handleDragOver(event)"
+           ondragleave="handleDragLeave(event)"
+           ondrop="handleDrop(event)">
+        <input type="file" id="imageInput" accept="image/*" onchange="handleFileSelect(event)">
+        <div class="upload-icon">🖼️</div>
+        <p class="upload-main-text">Drop photo here or click to browse</p>
+        <p class="upload-sub-text">JPEG · PNG · WebP · Max 20MB</p>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: CLINICAL FORM ───────────────────────── -->
+    <div class="card" style="animation: fadeUp 0.6s ease forwards 0.6s; opacity: 0;">
+      <div class="card-title">
+        <span class="icon">📋</span> Clinical Information
+      </div>
+      <p class="card-desc">The more detail you provide, the more accurate the diagnosis</p>
+
+      <div class="form-group">
+        <label class="form-label" for="symptoms">Symptoms / Clinical Signs *</label>
+        <textarea class="form-textarea" id="symptoms"
+          placeholder="e.g. Intense scratching for 2 weeks, hair loss on back, red patches on belly, loss of appetite..."></textarea>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="species">Species</label>
+          <select class="form-select" id="species">
+            <option value="">Unknown</option>
+            <option value="Dog">Dog</option>
+            <option value="Cat">Cat</option>
+            <option value="Cattle">Cattle</option>
+            <option value="Goat">Goat</option>
+            <option value="Horse">Horse</option>
+            <option value="Sheep">Sheep</option>
+            <option value="Rabbit">Rabbit</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="sex">Sex</label>
+          <select class="form-select" id="sex">
+            <option value="Unknown">Unknown</option>
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="knownAge">Known Age</label>
+          <input class="form-input" type="text" id="knownAge" placeholder="e.g. 3 years">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="weightKg">Weight (kg)</label>
+          <input class="form-input" type="number" id="weightKg" placeholder="e.g. 18.5" min="0" step="0.1">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="region">Geographic Region</label>
+        <input class="form-input" type="text" id="region" placeholder="e.g. South India, Tamil Nadu">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label class="form-label" for="outputFormat">Output Format</label>
+        <select class="form-select" id="outputFormat">
+          <option value="json">Structured JSON → Visual Report</option>
+          <option value="vmr_markdown">VMR Markdown (Professional)</option>
+        </select>
+      </div>
+
+      <button class="btn-diagnose" id="diagnoseBtn" onclick="runDiagnosis()">
+        <div class="btn-spinner"></div>
+        <span class="btn-text">🔬 Run Diagnosis</span>
+      </button>
+    </div>
+
+    <!-- ── LOADING PANEL ──────────────────────────────── -->
+    <div class="loading-panel" id="loadingPanel">
+      <div class="loading-orb"></div>
+      <p style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--text-muted);">
+        Analyzing your image…
+      </p>
+      <div class="loading-stages">
+        <div class="stage-item" id="stage1"><div class="stage-dot"></div>OpenCV Preprocessing Pipeline</div>
+        <div class="stage-item" id="stage2"><div class="stage-dot"></div>Fur / Coat Segmentation</div>
+        <div class="stage-item" id="stage3"><div class="stage-dot"></div>Gemini 2.0 Flash — Multimodal Analysis</div>
+        <div class="stage-item" id="stage4"><div class="stage-dot"></div>Differential Diagnosis Generation</div>
+        <div class="stage-item" id="stage5"><div class="stage-dot"></div>Medication Safety Review</div>
+        <div class="stage-item" id="stage6"><div class="stage-dot"></div>VMR Report Compilation</div>
+      </div>
+    </div>
+
+    <!-- ── RESULTS PANEL ──────────────────────────────── -->
+    <div class="results-panel" id="resultsPanel">
+
+      <!-- Record bar -->
+      <div class="record-bar">
+        <span class="record-id" id="recordId">VMR-PENDING</span>
+        <span class="record-meta" id="recordTs">—</span>
+        <div class="record-quality">
+          <span>Image Quality</span>
+          <div class="quality-bar-wrap">
+            <div class="quality-bar-fill" id="qualityBarFill" style="width:0%"></div>
+          </div>
+          <span id="qualityScore">—</span>
+        </div>
+      </div>
+
+      <div class="results-grid" id="resultsGrid">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="safe-banner" id="safeBanner" style="display:none"></div>
+
+    </div>
+
+  </main>
+
+  <!-- ══ DISCLAIMER ════════════════════════════════════════ -->
+  <p class="disclaimer">
+    <strong>⚠️ CLINICAL DISCLAIMER:</strong>
+    This tool is not a substitute for professional veterinary care.
+  </p>
+
+  <!-- ══ ERROR TOAST ═══════════════════════════════════════ -->
+  <div class="toast" id="toast"></div>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       JAVASCRIPT — Full Application Logic
+  ══════════════════════════════════════════════════════════ -->
+  <script>
+    // ─── Configuration ───────────────────────────────────────────────────────
+    // Change this to your deployed Flask backend URL
+    // e.g. "https://your-app.onrender.com" or "http://localhost:5000"
+    const API_BASE = "http://localhost:5000";
+
+    // ─── State ───────────────────────────────────────────────────────────────
+    let selectedFile = null;
+
+    // ─── File Handling ────────────────────────────────────────────────────────
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) loadFile(file);
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      handleDragLeave(event);
+      const file = event.dataTransfer.files[0];
+      if (file && file.type.startsWith("image/")) loadFile(file);
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      document.getElementById("uploadZone").classList.add("drag-over");
+    }
+
+    function handleDragLeave(event) {
+      document.getElementById("uploadZone").classList.remove("drag-over");
+    }
+
+    function loadFile(file) {
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById("previewImg").src = e.target.result;
+        document.getElementById("previewContainer").style.display = "block";
+        document.getElementById("uploadZone").style.display = "none";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearImage() {
+      selectedFile = null;
+      document.getElementById("imageInput").value = "";
+      document.getElementById("previewContainer").style.display = "none";
+      document.getElementById("uploadZone").style.display = "flex";
+    }
+
+    // ─── Loading Stage Animator ───────────────────────────────────────────────
+
+    let stageInterval = null;
+
+    function startLoadingAnimation() {
+      let currentStage = 1;
+      const totalStages = 6;
+
+      // Reset all
+      for (let i = 1; i <= totalStages; i++) {
+        const el = document.getElementById(`stage${i}`);
+        el.className = "stage-item";
+      }
+
+      function tick() {
+        if (currentStage > 1) {
+          const prev = document.getElementById(`stage${currentStage - 1}`);
+          prev.className = "stage-item done";
+        }
+        if (currentStage <= totalStages) {
+          const curr = document.getElementById(`stage${currentStage}`);
+          curr.className = "stage-item active";
+          currentStage++;
+        }
+      }
+
+      tick();
+      stageInterval = setInterval(tick, 900);
+    }
+
+    function stopLoadingAnimation() {
+      if (stageInterval) clearInterval(stageInterval);
+      for (let i = 1; i <= 6; i++) {
+        document.getElementById(`stage${i}`).className = "stage-item done";
+      }
+    }
+
+    // ─── Main Diagnosis Function ──────────────────────────────────────────────
+
+    async function runDiagnosis() {
+      // Validation
+      if (!selectedFile) {
+        showToast("⚠️ Please upload an animal photo first.");
+        return;
+      }
+      const symptoms = document.getElementById("symptoms").value.trim();
+      if (!symptoms) {
+        showToast("⚠️ Please describe the symptoms you've observed.");
+        return;
+      }
+
+      // UI → Loading state
+      const btn = document.getElementById("diagnoseBtn");
+      btn.classList.add("loading");
+      btn.disabled = true;
+
+      document.getElementById("resultsPanel").classList.remove("visible");
+      document.getElementById("loadingPanel").classList.add("visible");
+      startLoadingAnimation();
+
+      // Build FormData for the API
+      const formData = new FormData();
+      formData.append("image",    selectedFile);
+      formData.append("symptoms", symptoms);
+
+      const species   = document.getElementById("species").value;
+      const sex       = document.getElementById("sex").value;
+      const knownAge  = document.getElementById("knownAge").value.trim();
+      const weightKg  = document.getElementById("weightKg").value;
+      const region    = document.getElementById("region").value.trim();
+      const format    = document.getElementById("outputFormat").value;
+
+      if (species)  formData.append("species",   species);
+      if (sex)      formData.append("sex",        sex);
+      if (knownAge) formData.append("known_age",  knownAge);
+      if (weightKg) formData.append("weight_kg",  weightKg);
+      if (region)   formData.append("region",     region);
+      formData.append("format", format);
+
+      try {
+        const response = await fetch(`${API_BASE}/api/v1/diagnose`, {
+          method: "POST",
+          body:   formData,
+        });
+
+        const result = await response.json();
+
+        stopLoadingAnimation();
+        document.getElementById("loadingPanel").classList.remove("visible");
+        btn.classList.remove("loading");
+        btn.disabled = false;
+
+        if (!result.success) {
+          showToast(`❌ ${result.error?.message || "Diagnosis failed."}`);
+          return;
+        }
+
+        // If VMR markdown was requested, render raw markdown
+        if (format === "vmr_markdown") {
+          renderVMRMarkdown(result.data);
+        } else {
+          renderStructuredReport(result.data);
+        }
+
+      } catch (err) {
+        stopLoadingAnimation();
+        document.getElementById("loadingPanel").classList.remove("visible");
+        btn.classList.remove("loading");
+        btn.disabled = false;
+
+        // ── Demo mode: show mock data when backend is unreachable ──────────
+        console.warn("Backend unreachable — running in demo mode:", err.message);
+        showToast("ℹ️ Backend not connected — showing demo output.");
+        renderStructuredReport({ record_id: "VMR-DEMO-0001", elapsed_ms: 1843, report: getMockReport() });
+      }
+    }
+
+    // ─── Render Structured JSON Report ───────────────────────────────────────
+
+    function renderStructuredReport(data) {
+      const rp     = data.report;
+      const recId  = data.record_id || "VMR-UNKNOWN";
+      const ts     = new Date().toLocaleString("en-IN");
+
+      // Record bar
+      document.getElementById("recordId").textContent   = recId;
+      document.getElementById("recordTs").textContent   = ts;
+      document.getElementById("qualityScore").textContent = (rp.image_quality * 100).toFixed(0) + "%";
+
+      setTimeout(() => {
+        document.getElementById("qualityBarFill").style.width = (rp.image_quality * 100) + "%";
+      }, 200);
+
+      // Build grid HTML
+      let gridHTML = "";
+
+      // 1. Breed card
+      const bcPct = (rp.breed_confidence * 100).toFixed(1);
+      gridHTML += `
+        <div class="breed-card">
+          <div class="breed-label">Breed Identification</div>
+          <div class="breed-name">${rp.breed_prediction}</div>
+          <div class="breed-species">${rp.species}</div>
+          <div class="confidence-row">
+            <span class="confidence-label">Confidence</span>
+            <span class="confidence-pct" id="breedPct">${bcPct}%</span>
+          </div>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar-fill" id="breedBar"></div>
+          </div>
+        </div>`;
+
+      // 2. Patient info card
+      gridHTML += `
+        <div class="info-card">
+          <div class="section-title" style="font-size:0.85rem; margin-bottom: 0.6rem;">
+            🗂️ Patient Info
+          </div>
+          <div class="info-row">
+            <span class="info-key">Age Band</span>
+            <span class="age-badge">${rp.estimated_age_band}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Sex</span>
+            <span class="info-val">${rp.sex_estimate}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Processing</span>
+            <span class="info-val">${data.elapsed_ms}ms</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Safe to Proceed</span>
+            <span class="info-val" style="color: ${rp.safe_to_proceed ? 'var(--accent)' : 'var(--accent-red)'}">
+              ${rp.safe_to_proceed ? "✓ Yes" : "✕ Escalate"}
+            </span>
+          </div>
+        </div>`;
+
+      // 3. Emergency flags (if any)
+      if (rp.emergency_flags && rp.emergency_flags.length > 0) {
+        const flagsHTML = rp.emergency_flags.map(f =>
+          `<div class="emergency-flag"><span class="emergency-dot">●</span>${f}</div>`
+        ).join("");
+        gridHTML += `
+          <div class="emergency-card visible">
+            <div class="emergency-title">🚨 Emergency Flags</div>
+            ${flagsHTML}
+          </div>`;
+      } else {
+        gridHTML += `
+          <div class="info-card" style="border-color: rgba(126,201,138,0.25); background: rgba(126,201,138,0.04);">
+            <div style="color: var(--accent); font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem;">
+              ✅ No Emergency Flags
+            </div>
+            <div style="color: var(--text-dim); font-size: 0.78rem; line-height: 1.5;">
+              No immediate life-threatening conditions detected. Standard veterinary follow-up recommended.
+            </div>
+          </div>`;
+      }
+
+      // 4. Observations
+      const obsHTML = rp.observations.map((o, i) =>
+        `<div class="care-item" style="animation-delay: ${i * 0.1}s">
+           <span class="care-step">#${i+1}</span>${o}
+         </div>`
+      ).join("");
+      gridHTML += `
+        <div class="card section-full" style="padding: 1.25rem 1.5rem;">
+          <div class="section-title">🔬 Objective Observations</div>
+          <div class="care-list">${obsHTML}</div>
+        </div>`;
+
+      // 5. Differentials
+      const sorted = [...rp.differentials].sort((a, b) => b.confidence - a.confidence);
+      const diffsHTML = sorted.map((d, i) => {
+        const supportTags = (d.supporting_signs || []).slice(0, 3)
+          .map(s => `<span class="sign-tag support">${s}</span>`).join("");
+        const againstTags = (d.ruling_out_signs || []).slice(0, 2)
+          .map(s => `<span class="sign-tag against">${s}</span>`).join("");
+        const confPct = (d.confidence * 100).toFixed(0);
+        return `
+          <div class="diff-item" style="animation-delay: ${i * 0.12}s">
+            <div class="diff-rank ${i === 0 ? 'top' : ''}">#${i+1}</div>
+            <div class="diff-body">
+              <div class="diff-name">${d.condition}</div>
+              <div class="diff-code">${d.icd_vet_code ? 'CODE: ' + d.icd_vet_code : '—'}</div>
+              <div class="diff-signs">${supportTags}${againstTags}</div>
+            </div>
+            <div class="diff-conf-col">
+              <div class="diff-conf-pct">${confPct}%</div>
+              <div class="diff-conf-bar-wrap">
+                <div class="diff-conf-bar-fill" style="--target: ${confPct}%"></div>
+              </div>
+            </div>
+          </div>`;
+      }).join("");
+      gridHTML += `
+        <div class="card section-full" style="padding: 1.25rem 1.5rem;">
+          <div class="section-title">🩺 Differential Diagnosis</div>
+          <div class="diff-list">${diffsHTML}</div>
+        </div>`;
+
+      // 6. Actionable Care
+      const careHTML = rp.actionable_care.map((s, i) =>
+        `<div class="care-item" style="animation-delay: ${i * 0.08}s">
+           <span class="care-step">STEP ${i+1}</span>${s}
+         </div>`
+      ).join("");
+      gridHTML += `
+        <div class="card section-full" style="padding: 1.25rem 1.5rem;">
+          <div class="section-title">💊 Actionable Care Plan</div>
+          <div class="care-list">${careHTML}</div>
+        </div>`;
+
+      // 7. Medication Safety
+      if (rp.medication_risks && rp.medication_risks.length > 0) {
+        const medRows = rp.medication_risks.map(m => `
+          <tr>
+            <td class="med-drug">${m.drug_name}</td>
+            <td>${m.drug_class}</td>
+            <td><span class="risk-badge risk-${m.risk_level}">${m.risk_level}</span></td>
+            <td><span class="dose-badge dose-${m.dose_classification}">${m.dose_classification}</span></td>
+            <td style="font-size:0.75rem; max-width:200px; color: var(--text-dim)">${m.clinical_action}</td>
+          </tr>`).join("");
+        gridHTML += `
+          <div class="card section-full" style="padding: 1.25rem 1.5rem;">
+            <div class="section-title">💉 Medication Safety Review
+              <span style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); font-weight:400; margin-left: 4px;">
+                Age band: ${rp.estimated_age_band}
+              </span>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="med-table">
+                <thead><tr>
+                  <th>Drug</th><th>Class</th><th>Risk</th>
+                  <th>Dose Protocol</th><th>Clinical Action</th>
+                </tr></thead>
+                <tbody>${medRows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      // Render
+      document.getElementById("resultsGrid").innerHTML = gridHTML;
+      document.getElementById("resultsPanel").classList.add("visible");
+
+      // Animate breed bar after DOM insertion
+      setTimeout(() => {
+        const bar = document.getElementById("breedBar");
+        if (bar) bar.style.width = bcPct + "%";
+        // Diff bars
+        document.querySelectorAll(".diff-conf-bar-fill").forEach(el => {
+          el.style.width = el.style.getPropertyValue("--target") || "0%";
+        });
+      }, 150);
+
+      // Safe/unsafe banner
+      const banner = document.getElementById("safeBanner");
+      if (rp.safe_to_proceed) {
+        banner.className = "safe-banner safe";
+        banner.innerHTML = "✅ No emergency conditions detected. This report is suitable for veterinary review prior to treatment initiation.";
+      } else {
+        banner.className = "safe-banner unsafe";
+        banner.innerHTML = "🚨 HIGH-RISK findings present. Immediate veterinary consultation is mandatory before any treatment.";
+      }
+      banner.style.display = "flex";
+
+      // Scroll to results
+      document.getElementById("resultsPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // ─── Render VMR Markdown (Simple) ─────────────────────────────────────────
+
+    function renderVMRMarkdown(data) {
+      const vmr = data.vmr_markdown || "No VMR content returned.";
+
+      document.getElementById("resultsGrid").innerHTML = `
+        <div class="card section-full" style="padding: 1.5rem;">
+          <div class="section-title">📄 Veterinary Medical Record (VMR)</div>
+          <pre style="
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.7;
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: var(--bg-surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+          ">${escapeHtml(vmr)}</pre>
+        </div>`;
+
+      document.getElementById("recordId").textContent    = data.record_id || "VMR";
+      document.getElementById("recordTs").textContent    = new Date().toLocaleString("en-IN");
+      document.getElementById("qualityScore").textContent = "—";
+      document.getElementById("resultsPanel").classList.add("visible");
+      document.getElementById("safeBanner").style.display = "none";
+      document.getElementById("resultsPanel").scrollIntoView({ behavior: "smooth" });
+    }
+
+    // ─── Toast Notification ───────────────────────────────────────────────────
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("visible");
+      setTimeout(() => t.classList.remove("visible"), 4500);
+    }
+
+    // ─── Utility ──────────────────────────────────────────────────────────────
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    // ─── Mock Data (Demo / Offline Mode) ─────────────────────────────────────
+
+    function getMockReport() {
+      return {
+        species:             "Canis lupus familiaris",
+        breed_prediction:    "Labrador Retriever",
+        breed_confidence:    0.87,
+        estimated_age_band:  "ADULT",
+        sex_estimate:        "MALE",
+        image_quality:       0.81,
+        safe_to_proceed:     true,
+        observations: [
+          "Bilateral patchy alopecia observed along the dorso-lumbar region extending to the flanks.",
+          "Erythematous papular eruption with serous crusting at periphery of lesion sites.",
+          "Hyperpigmentation noted at chronic lesion margins — indicative of prolonged irritation.",
+          "No ocular or nasal discharge detected. Mucous membranes appear within normal limits.",
+        ],
+        differentials: [
+          {
+            condition:        "Canine Sarcoptic Mange (Scabies)",
+            icd_vet_code:     "VeNom-10234",
+            confidence:       0.84,
+            supporting_signs: ["intense pruritus", "papular eruption", "alopecia"],
+            ruling_out_signs: ["no ear margin involvement noted"],
+          },
+          {
+            condition:        "Canine Atopic Dermatitis",
+            icd_vet_code:     "VeNom-10311",
+            confidence:       0.61,
+            supporting_signs: ["bilateral pattern", "chronic hyperpigmentation"],
+            ruling_out_signs: ["no seasonal history provided"],
+          },
+          {
+            condition:        "Dermatophytosis (Ringworm)",
+            icd_vet_code:     "VeNom-10287",
+            confidence:       0.38,
+            supporting_signs: ["circular lesion pattern", "alopecia"],
+            ruling_out_signs: ["no fluorescence data", "no scale pattern confirmed"],
+          },
+        ],
+        actionable_care: [
+          "Conduct deep skin scraping for microscopic evaluation of Sarcoptes scabiei mites — prioritise before treatment.",
+          "Perform Wood's lamp examination and DTM fungal culture to rule out Dermatophytosis.",
+          "Initiate selamectin or sarolaner (per veterinarian prescription) if scabies is confirmed.",
+          "Provide supportive care: chlorhexidine 2% medicated bath twice weekly, Elizabethan collar to prevent self-trauma.",
+          "Recheck in 14 days. If no improvement, pursue allergy skin testing for Atopic Dermatitis.",
+        ],
+        emergency_flags: [],
+        medication_risks: [
+          {
+            drug_name:           "Ivermectin",
+            drug_class:          "Macrocyclic lactone",
+            risk_level:          "MEDIUM",
+            age_band_flag:       "CAUTION",
+            reason:              "MDR1/ABCB1 mutation risk in collie breeds; CNS toxicity possible.",
+            zoonotic_risk:       false,
+            dose_classification: "STANDARD",
+            clinical_action:     "Screen for MDR1 mutation before use. Weight-adjusted dosing required.",
+          },
+          {
+            drug_name:           "Prednisolone",
+            drug_class:          "Corticosteroid",
+            risk_level:          "LOW",
+            age_band_flag:       "CLEAR",
+            reason:              "No age-band contraindication in ADULT patients.",
+            zoonotic_risk:       false,
+            dose_classification: "STANDARD",
+            clinical_action:     "Standard anti-inflammatory dosing. Monitor for PU/PD side effects.",
+          },
+        ],
+        preprocessing_warnings: [],
+      };
+    }
+
+  </script>
+</body>
+</html>
